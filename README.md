@@ -1,1 +1,1 @@
-## Algorítmo Genético para a resolução do problema do fluxo máximo em grafos
+## Algorítimo Genético para a resolução do problema do Fluxo Máximo em grafos de fluxo
