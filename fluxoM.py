@@ -193,11 +193,7 @@ def nova_geracao(populacao, chance_mutacao, chance_reproducao, origem, destino, 
                 filhos.append(cruzamento(melhor_individuo, i, origem, destino))
             else:
                 individuos_mutados.append(mutacao(i, caminhos))
-#     Maximo encontrado: 78
-# quntidade de caminhos 2048
-# quantidade de genes 13048
-# indididuo DiGraph with 13 nodes and 74 edges
-# Grafo DiGraph with 13 nodes and 78 edges
+
     limpeza = []
     limpeza = geracao
     limpeza.extend(filhos)
@@ -316,6 +312,7 @@ else:
 # print("quantidade de genes", len(individuo_fluxo_maximo_atual[2]["genes"]))
 # print("indididuo", individuo_fluxo_maximo_atual[0])
 # print('Grafo', G)
+# print("Fluxo do grafo segundo o pacote networkx:", nx.maximum_flow_value(G, origem, destino))
 
 # print("Configurações:")
 # print("Arquivo:", arquivo)
