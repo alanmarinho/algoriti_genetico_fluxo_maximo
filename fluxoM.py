@@ -235,10 +235,6 @@ def main():
     # calcula o fluxo da população inicial
     populacao_atual = calcula_fluxo_geracao(populacao_inicial, origem, destino)
     
-    # cruzamento(populacao_atual[0],populacao_atual[0], origem, destino)
-    mutacao(populacao_atual[0], caminhos)
-
-    
     # Executa o algoritmo genético
     print("inicial algoritmo")
     for i in range(quantidade_geracoes):
