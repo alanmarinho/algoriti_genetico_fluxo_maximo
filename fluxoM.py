@@ -1,4 +1,3 @@
-import math
 import os
 import sys
 import networkx as nx
@@ -60,8 +59,10 @@ def gera_todos_os_caminhos(G, origem, destino):
 # função geradora de individuos (subgrafo)
 def gera_individuo(caminhos):
     SG = nx.DiGraph()
-    for i in range(2):
-        caminhos_escolhidos = random.sample(caminhos,1)
+    if len(caminhos) > 1:
+        caminhos_escolhidos = random.sample(caminhos,2)
+    else:
+        caminhos_escolhidos = caminhos  
         
     for caminho in caminhos_escolhidos:
         for i in range(len(caminho)):
@@ -106,30 +107,47 @@ def gera_populacao_inicial(tamanho_populacao, caminhos):
         populacao_inicial.append(gera_individuo(caminhos))
     return populacao_inicial
 
+# função de mutação
 def mutacao(individuo, caminhos):
+    print
     numero_aleatorio = random.random()
     genes = []
     individuo_mutado = []
     # mutação por remoção
     if numero_aleatorio <= 1 / 3:
-        # print('remoção')
         if (len(individuo[2]["genes"]) > 1):
-            for i in range(int(len(individuo[2]["genes"])/2)):
+            for i in range(len(individuo[2]["genes"])//2):
                 individuo[2]["genes"].remove(random.choice(individuo[2]["genes"]))
         else:
-            individuo[2]["genes"].remove(random.choice(individuo[2]["genes"]))
-            individuo[2]["genes"].append(random.choice(caminhos))
+            if len(caminhos) <= 1:
+                pass
+            else:
+                individuo[2]["genes"].remove(random.choice(individuo[2]["genes"]))
+                individuo[2]["genes"].append(random.choice(caminhos))
     # mutação por adição
     elif numero_aleatorio > 1 / 3 and numero_aleatorio <= 2 / 3:
-        # print('adiçao')
-        for i in range(10):
+        if (len(individuo[2]["genes"]) > 1):
+            for i in range(len(individuo[2]["genes"])//2):
+                individuo[2]["genes"].append(random.choice(caminhos))
+        else:
+            if len(caminhos) <= 1:
+                pass
             individuo[2]["genes"].append(random.choice(caminhos))
     # mutação por substituição
     else:
-        # print('remoção')
-        for i in range(10):
-            individuo[2]["genes"].remove(random.choice(individuo[2]["genes"]))
-            individuo[2]["genes"].append(random.choice(caminhos))
+        if (len(individuo[2]["genes"]) > 1):
+            quant_genes = len(individuo[2]["genes"])//2  
+            for i in range(quant_genes):
+                individuo[2]["genes"].remove(random.choice(individuo[2]["genes"]))
+
+            for i in range(quant_genes):
+                individuo[2]["genes"].append(random.choice(caminhos))
+        else:
+            if len(caminhos) <= 1:
+                pass
+            else:
+                individuo[2]["genes"].remove(random.choice(individuo[2]["genes"]))
+                individuo[2]["genes"].append(random.choice(caminhos))
         
     genes = individuo[2]["genes"]
     individuo_mutado = novo_individuo(genes)
@@ -140,16 +158,23 @@ def mutacao(individuo, caminhos):
 def cruzamento(reprodutor, individuo, origem, destino):
     filho = None
     genes_filho = []
+    genes_individuo = []
 
     # tipo de cruzamento: 50|50
-    genes_reprodutor = random.sample(reprodutor[2]["genes"], math.ceil(len(reprodutor[2]["genes"])/2))
-    # print(len(genes_reprodutor))
-    for i in range(2):
-        gene = random.choice(individuo[2]["genes"]) 
-        if gene not in genes_filho:
-            genes_filho.append(gene)
-            
-    genes_filho = genes_reprodutor + individuo[2]["genes"]
+    if len(reprodutor[2]["genes"]) > 1:
+        random.shuffle(reprodutor[2]["genes"])
+        genes_reprodutor = reprodutor[2]["genes"][:(len(reprodutor[2]["genes"])//2)]
+    else:
+        genes_reprodutor = reprodutor[2]["genes"]
+    
+    if len(individuo[2]["genes"]) > 1:
+        random.shuffle(individuo[2]["genes"])
+        genes_individuo = individuo[2]["genes"][:len(individuo[2]["genes"])//2]
+    else:
+        genes_individuo = individuo[2]["genes"]
+        
+    genes_filho = genes_reprodutor + genes_individuo
+
     filho = novo_individuo(genes_filho)
 
     return ([filho, {"fluxo": calcula_fluxo_induviduo(filho, origem, destino)}, {"genes": genes_filho}])
@@ -181,6 +206,7 @@ def nova_geracao(populacao, chance_mutacao, chance_reproducao, origem, destino, 
     # adiciona os filho dos dois melhores individuos da geração anterior
     geracao.append(cruzamento(melhor_individuo, segundo_melhor_individuo, origem, destino))
 
+    # calcula os demais filhos e individuos mutados
     for i in populacao:
         numero_aleatorio1 = random.random()
         numero_aleatorio2 = random.random()
@@ -189,35 +215,30 @@ def nova_geracao(populacao, chance_mutacao, chance_reproducao, origem, destino, 
         elif numero_aleatorio2 <= chance_mutacao:
             individuos_mutados.append(mutacao(i, caminhos))
         else:
-            if (numero_aleatorio1 + numero_aleatorio2)/2 <= chance_reproducao:
+            numero_aleatorio3 = random.random()
+            if numero_aleatorio3 <= 0.5:
                 filhos.append(cruzamento(melhor_individuo, i, origem, destino))
             else:
                 individuos_mutados.append(mutacao(i, caminhos))
-
-    limpeza = []
-    limpeza = geracao
-    limpeza.extend(filhos)
-    limpeza.extend(individuos_mutados)
-    for i in range(len(limpeza)):
-        nova_geracao.append(limpa_gene_duplicado(limpeza[i]))
-    random.shuffle(nova_geracao)     
+    
+    nova_geracao = geracao
+    nova_geracao.extend(filhos)
+    nova_geracao.extend(individuos_mutados)
+   
     return nova_geracao, max(nova_geracao, key=lambda x: x[1]["fluxo"])    
 
-def limpa_gene_duplicado(individuo):
-    genes = []
-    for i in individuo[2]["genes"]:
-        if i not in genes:
-            genes.append(i)
-    individuo[2]["genes"] = genes
-    return individuo
-
+# função principal
 def main():
     # gera a população inicial    
     populacao_inicial = gera_populacao_inicial(tamanho_populacao, caminhos)
 
     # calcula o fluxo da população inicial
     populacao_atual = calcula_fluxo_geracao(populacao_inicial, origem, destino)
-            
+    
+    # cruzamento(populacao_atual[0],populacao_atual[0], origem, destino)
+    mutacao(populacao_atual[0], caminhos)
+
+    
     # Executa o algoritmo genético
     print("inicial algoritmo")
     for i in range(quantidade_geracoes):
@@ -228,7 +249,6 @@ def main():
     print("Fluxo máximo encontrado:", individuo_fluxo_maximo_atual[1]["fluxo"])
     
 ############################ CÓDIGO ############################
-
 # Configurar leitura dos parâmetros
 params = sys.argv[1:]
 padrao = r"(-read [^\s]+ -nodes \d+ \d+ -pi \d+ -qg \d+( --probs \d+ \d+)?+( -confg)?)|(-help)"
@@ -302,22 +322,3 @@ else:
 
 ################## EXEMPLO ##################
 # py fluxoM.py -read fluxo-inst13 -nodes 1 6 -pi 10 -qg 10 --probs 60 40 
-
-
-
-################## INFOS ##################
-
-# print("Genes máximo encontrado:", individuo_fluxo_maximo_atual[2]["genes"])
-# print("quntidade de caminhos", len(caminhos))
-# print("quantidade de genes", len(individuo_fluxo_maximo_atual[2]["genes"]))
-# print("indididuo", individuo_fluxo_maximo_atual[0])
-# print('Grafo', G)
-# print("Fluxo do grafo segundo o pacote networkx:", nx.maximum_flow_value(G, origem, destino))
-
-# print("Configurações:")
-# print("Arquivo:", arquivo)
-# print("Tamanho da populacao:", tamanho_populacao)
-# print("Quantidade geracoes:", quantidade_geracoes)
-# print("\nConfigurações padrão aplicadas a:")
-# print(f"Probabilidade mutacao: {int(probabilidade_mutacao * 100)}%" )
-# print(f"Probabilidade cruzamento: {int(probabilidade_cruzamento * 100)}%")
